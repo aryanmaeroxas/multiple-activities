@@ -145,7 +145,7 @@ export default function TodoApp() {
                   }}
                   onBlur={() => saveEdit(todo.id)}
                   onKeyDown={(e) =>
-                    e.key === "Enter" && !e.shiftKey && saveEdit(todo.id)
+                    !e.shiftKey && e.key === "Enter" && saveEdit(todo.id)
                   }
                   autoFocus
                   className="w-full p-1 border rounded resize-none focus:outline-none"

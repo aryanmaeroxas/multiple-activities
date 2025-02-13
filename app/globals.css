@@ -67,3 +67,7 @@
     @apply bg-background text-foreground;
   }
 }
+
+:where(.custom-markdown) * {
+  all: unset;
+}
