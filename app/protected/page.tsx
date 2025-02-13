@@ -1,6 +1,5 @@
-import FetchDataSteps from "@/components/tutorial/fetch-data-steps";
 import { createClient } from "@/utils/supabase/server";
-import { InfoIcon } from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default async function ProtectedPage() {
@@ -16,7 +15,25 @@ export default async function ProtectedPage() {
 
   return (
     <div className="flex-1 w-full flex flex-col gap-12">
-      <div className="w-full"></div>
+      <div className="w-full">
+        <ul>
+          <li>
+            <Link href="/protected/to-do-list">To Do List</Link>
+          </li>
+          <li>
+            <Link href="/protected/google-drive-lite">Google Drive "Lite"</Link>
+          </li>
+          <li>
+            <Link href="/protected/food-review">Food Review App</Link>
+          </li>
+          <li>
+            <Link href="/protected/pokemon-review">Pokemon Review App</Link>
+          </li>
+          <li>
+            <Link href="/protected/markdown-notes">Markdown Notes App</Link>
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }

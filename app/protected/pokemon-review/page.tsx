@@ -1,7 +1,3 @@
-import React from "react";
-
-const pokemonReviewPage = () => {
-  return <div>pokemonReviewPage</div>;
-};
-
-export default pokemonReviewPage;
+export default async function PokemonReview() {
+  return <>Pokemon Review</>;
+}

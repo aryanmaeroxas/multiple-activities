@@ -1,7 +1,3 @@
-import React from "react";
-
-const googleDriveLitePage = () => {
-  return <div>googleDriveLitePage</div>;
-};
-
-export default googleDriveLitePage;
+export default async function GoogleDriveLite() {
+  return <>Google Drive Lite</>;
+}

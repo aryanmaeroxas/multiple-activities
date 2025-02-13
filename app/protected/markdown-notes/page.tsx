@@ -1,7 +1,3 @@
-import React from "react";
-
-const markdownNotesPage = () => {
-  return <div>markdownNotesPage</div>;
-};
-
-export default markdownNotesPage;
+export default async function MarkDownNotes() {
+  return <>Mark Down Notes</>;
+}
