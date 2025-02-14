@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@plugin "@tailwindcss/typography";
 
 @layer base {
   :root {
@@ -66,8 +67,4 @@
   body {
     @apply bg-background text-foreground;
   }
-}
-
-:where(.custom-markdown) * {
-  all: unset;
 }

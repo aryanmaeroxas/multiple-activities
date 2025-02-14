@@ -5,12 +5,20 @@ import { remark } from "remark";
 import html from "remark-html";
 import { createClient } from "@/utils/supabase/client";
 
+interface Note {
+  id: string;
+  content: string;
+}
+
 export default function MarkdownNotes() {
-  const [notes, setNotes] = useState<any[]>([]);
-  const [newNote, setNewNote] = useState("");
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [newNote, setNewNote] = useState<Note>({ id: "", content: "" });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [user, setUser] = useState<any>(null);
+  const [convertedHTMLs, setConvertedHTMLs] = useState<{
+    [key: string]: string;
+  }>({});
   const [previewMode, setPreviewMode] = useState<{ [key: string]: boolean }>(
     {}
   );
@@ -33,71 +41,90 @@ export default function MarkdownNotes() {
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
-    if (data) setNotes(data);
+    if (data) {
+      const convertedHTMLMap: { [key: string]: string } = {};
+      for (const note of data) {
+        convertedHTMLMap[note.id] = await convertMarkdown(note.content);
+      }
+
+      setNotes(
+        data.map((note: any) => ({ id: note.id, content: note.content }))
+      );
+      setConvertedHTMLs(convertedHTMLMap);
+    }
   }
 
   async function addNote() {
-    if (!newNote.trim() || !user) return;
+    if (!newNote.content.trim() || !user) return;
 
     const { data, error } = await supabase
       .from("notes")
-      .insert([{ content: newNote, user_id: user.id }])
+      .insert([{ content: newNote.content, user_id: user.id }])
       .select();
 
     if (error) {
-      console.error("Error adding note:", error.message);
+      console.log("Error adding note:", error.message);
       return;
     }
 
-    if (data) setNotes([data[0], ...notes]);
-    setNewNote("");
+    if (data) {
+      const newNoteWithMarkdown = { id: data[0].id, content: data[0].content };
+      const convertedMarkdown = await convertMarkdown(
+        newNoteWithMarkdown.content
+      );
+
+      setNotes([newNoteWithMarkdown, ...notes]);
+      setConvertedHTMLs((prev) => ({
+        ...prev,
+        [newNoteWithMarkdown.id]: convertedMarkdown,
+      }));
+    }
+    setNewNote({ id: "", content: "" });
   }
 
-  async function deleteNote(noteId: string) {
-    const { error } = await supabase.from("notes").delete().eq("id", noteId);
+  async function deleteNote(id: string) {
+    const { error } = await supabase.from("notes").delete().eq("id", id);
 
     if (error) {
-      console.error("Error deleting note:", error.message);
+      console.log("Error deleting note:", error.message);
       return;
     }
 
-    setNotes(notes.filter((note) => note.id !== noteId));
+    setNotes(notes.filter((note) => note.id !== id));
   }
 
-  function startEditing(noteId: string, currentText: string) {
-    setEditingId(noteId);
+  function startEditing(id: string, currentText: string) {
+    setEditingId(id);
     setEditText(currentText);
   }
 
-  async function saveEdit(noteId: string) {
+  async function saveEdit(id: string) {
     if (!editText.trim()) return;
 
     const { error } = await supabase
       .from("notes")
       .update({ content: editText, updated_at: new Date() })
-      .eq("id", noteId);
+      .eq("id", id);
 
     if (error) {
-      console.error("Error updating note:", error.message);
+      console.log("Error updating note:", error.message);
       return;
     }
 
     setNotes(
       notes.map((note) =>
-        note.id === noteId ? { ...note, content: editText } : note
+        note.id === id ? { ...note, content: editText } : note
       )
     );
-
     setEditingId(null);
   }
 
   async function convertMarkdown(text: string) {
     const processedContent = await remark().use(html).process(text);
-    console.log(processedContent.toString());
     return processedContent.toString();
   }
 
-  function togglePreview(noteId: string) {
+  async function togglePreview(noteId: string, content: string) {
     setPreviewMode((prev) => ({ ...prev, [noteId]: !prev[noteId] }));
   }
 
@@ -106,11 +133,10 @@ export default function MarkdownNotes() {
       <h1 className="text-center text-3xl font-semibold mb-4">
         Markdown Notes
       </h1>
-
       {/* Input Fields */}
       <textarea
-        value={newNote}
-        onChange={(e) => setNewNote(e.target.value)}
+        value={newNote.content}
+        onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
         placeholder="Write in Markdown..."
         className="w-full p-2 border rounded focus:outline-none resize-none"
         rows={4}
@@ -127,8 +153,16 @@ export default function MarkdownNotes() {
         {notes.map((note) => (
           <li key={note.id} className="p-2 border rounded bg-gray-50">
             <div className="flex justify-between">
-              <button onClick={() => togglePreview(note.id)}>Ⓜ️</button>
+              <input
+                title="Toggle Markdown"
+                type="checkbox"
+                className="toggle"
+                defaultChecked
+                onClick={() => togglePreview(note.id, note.content)}
+                disabled={editingId === note.id}
+              />
               <button
+                title="Delete"
                 onClick={() => deleteNote(note.id)}
                 className="text-red-500 hover:text-red-700"
               >
@@ -150,17 +184,18 @@ export default function MarkdownNotes() {
               />
             ) : previewMode[note.id] ? (
               <div
-                dangerouslySetInnerHTML={{
-                  __html: convertMarkdown(note.content),
-                }}
-              />
-            ) : (
-              <div
                 className="mt-2 p-2 bg-white border rounded"
                 onClick={() => startEditing(note.id, note.content)}
               >
                 {note.content}
               </div>
+            ) : (
+              <article
+                className="prose w-full p-2 border rounded resize-none focus:outline-none mt-2 ignore-css"
+                dangerouslySetInnerHTML={{
+                  __html: convertedHTMLs[note.id] || "",
+                }}
+              ></article>
             )}
           </li>
         ))}

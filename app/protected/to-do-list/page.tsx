@@ -40,7 +40,7 @@ export default function TodoApp() {
       .select();
 
     if (error) {
-      console.error("Error adding task:", error.message);
+      console.log("Error adding task:", error.message);
       return;
     }
 
@@ -55,7 +55,7 @@ export default function TodoApp() {
       .eq("id", todoId);
 
     if (error) {
-      console.error("Error updating task:", error.message);
+      console.log("Error updating task:", error.message);
       return;
     }
 
@@ -70,7 +70,7 @@ export default function TodoApp() {
     const { error } = await supabase.from("todos").delete().eq("id", todoId);
 
     if (error) {
-      console.error("Error deleting task:", error.message);
+      console.log("Error deleting task:", error.message);
       return;
     }
 
@@ -91,7 +91,7 @@ export default function TodoApp() {
       .eq("id", todoId);
 
     if (error) {
-      console.error("Error updating task:", error.message);
+      console.log("Error updating task:", error.message);
       return;
     }
 
