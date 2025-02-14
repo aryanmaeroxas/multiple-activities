@@ -19,12 +19,14 @@ export default function GoogleDriveLite(props: Props) {
   const [sortOrder, setSortOrder] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imageFiles, setImageFiles] = useState<FileData[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const supabase = createClient();
 
   useEffect(() => {
     props.searchParams.then((params) => {
       setSortOrder(params.sortOrder);
+      setUploadError("");
     });
   }, [props.searchParams]);
 
@@ -62,20 +64,37 @@ export default function GoogleDriveLite(props: Props) {
 
   async function uploadFile(file: File) {
     const timestamp = Date.now();
-    const filePath = `images/${timestamp}-${file.name}`;
+    const filePath = `images/${file.name}`;
     const { data, error } = await supabase.storage
       .from("google-drive-lite")
       .upload(filePath, file, { contentType: file.type });
     if (error) {
       console.log("Upload failed:", error.message);
+      setUploadError(error.message);
       return null;
     } else {
       console.log("File uploaded successfully:", data);
     }
     const fileName = data.path.split("/").pop();
     console.log("Uploaded File Name:", fileName);
-
+    fetchData();
     return fileName;
+  }
+
+  async function handleDelete(fileId: string) {
+    const { error } = await supabase.storage
+      .from("google-drive-lite")
+      .remove([`images/${fileId}`]);
+
+    if (error) {
+      console.error("Delete failed:", error.message);
+      alert("Failed to delete file!");
+      return;
+    }
+
+    setImageFiles((prevFiles) =>
+      prevFiles.filter((file) => file.id !== fileId)
+    );
   }
 
   return (
@@ -91,7 +110,7 @@ export default function GoogleDriveLite(props: Props) {
             className="grow"
             placeholder="Search"
             value={searchQuery}
-            onChange={(e) => e.target.value && setSearchQuery(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </label>
       </div>
@@ -117,20 +136,16 @@ export default function GoogleDriveLite(props: Props) {
         >
           UPLOAD
         </button>
-        <button
-          type="button"
-          title="Upload"
-          className="btn btn-primary ml-3"
-          onClick={fetchData}
-        >
-          FETCH DATA
-        </button>
       </div>
+      {uploadError && (
+        <div className="text-red-500 mt-1 mb-2">Error: {uploadError}</div>
+      )}
 
       <ImageTable
         sortOrder={sortOrder}
         searchQuery={searchQuery}
         files={imageFiles}
+        handleDelete={handleDelete}
       />
     </div>
   );
