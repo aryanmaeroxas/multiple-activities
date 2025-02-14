@@ -53,6 +53,7 @@ export default function MarkdownNotes() {
       setConvertedHTMLs(convertedHTMLMap);
     }
   }
+  
 
   async function addNote() {
     if (!newNote.content.trim() || !user) return;

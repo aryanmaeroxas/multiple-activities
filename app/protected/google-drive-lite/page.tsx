@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import ImageTable from "./ImageTable";
 import { createClient } from "@/utils/supabase/client";
 
+interface FileData {
+  name: string;
+  id: string;
+  created_at: string;
+}
+
 interface Props {
   searchParams: Promise<{ sortOrder: string }>;
 }
@@ -12,6 +18,7 @@ export default function GoogleDriveLite(props: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<FileData[]>([]);
 
   const supabase = createClient();
 
@@ -21,13 +28,38 @@ export default function GoogleDriveLite(props: Props) {
     });
   }, [props.searchParams]);
 
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files?.[0]) {
       setSelectedFile(event.target.files[0]);
     }
   };
 
-  // Upload file using standard upload
+  async function fetchData() {
+    const { data, error } = await supabase.storage
+      .from("google-drive-lite")
+      .list("images/", {
+        limit: 100,
+        offset: 0,
+        sortBy: { column: "name", order: "asc" },
+      });
+
+    if (error) {
+      console.log("Upload failed:", error.message);
+      return null;
+    }
+
+    const filteredFiles = data
+      .filter((item) => item.id !== null)
+      .map(({ name, id, created_at }) => ({ name, id, created_at }));
+
+    setImageFiles(filteredFiles);
+    console.log("Data fetched:", filteredFiles);
+  }
+
   async function uploadFile(file: File) {
     const timestamp = Date.now();
     const filePath = `images/${timestamp}-${file.name}`;
@@ -59,7 +91,7 @@ export default function GoogleDriveLite(props: Props) {
             className="grow"
             placeholder="Search"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => e.target.value && setSearchQuery(e.target.value)}
           />
         </label>
       </div>
@@ -85,9 +117,21 @@ export default function GoogleDriveLite(props: Props) {
         >
           UPLOAD
         </button>
+        <button
+          type="button"
+          title="Upload"
+          className="btn btn-primary ml-3"
+          onClick={fetchData}
+        >
+          FETCH DATA
+        </button>
       </div>
 
-      <ImageTable sortOrder={sortOrder} searchQuery={searchQuery} />
+      <ImageTable
+        sortOrder={sortOrder}
+        searchQuery={searchQuery}
+        files={imageFiles}
+      />
     </div>
   );
 }
