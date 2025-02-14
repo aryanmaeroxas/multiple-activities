@@ -12,7 +12,8 @@ interface Props {
   sortOrder: string;
   searchQuery: string;
   files: FileData[];
-  handleDelete: (fileId: string) => void;
+  handleDelete: (fileId: string, fileName: string) => void;
+  handleReplace: (fileId: string, newFile: File) => void;
 }
 
 export default function ImageTable({
@@ -20,6 +21,7 @@ export default function ImageTable({
   searchQuery,
   files,
   handleDelete,
+  handleReplace,
 }: Props) {
   const [order, setOrder] = useState<string>("asc");
 
@@ -30,6 +32,16 @@ export default function ImageTable({
   const filteredData = files.filter((data) =>
     data.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    fileId: string
+  ) => {
+    if (event.target.files?.[0]) {
+      const newFile = event.target.files[0];
+      handleReplace(fileId, newFile); // Call replace function
+    }
+  };
 
   const sortedData =
     order === "asc"
@@ -70,10 +82,21 @@ export default function ImageTable({
             <tr key={file.id}>
               <td>{file.name}</td>
               <td>{new Date(file.created_at).toLocaleString()}</td>
+
               <td>
+                <label title="Replace" className="cursor-pointer text-lg">
+                  📝
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => handleFileChange(event, file.id)}
+                  />
+                </label>
                 <button
-                  className="text-red-500 text-lg font-bold hover:text-red-700"
-                  onClick={() => handleDelete(file.id)}
+                  title="Delete"
+                  className="text-lg"
+                  onClick={() => handleDelete(file.id, file.name)}
                 >
                   ❌
                 </button>

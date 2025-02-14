@@ -63,7 +63,6 @@ export default function GoogleDriveLite(props: Props) {
   }
 
   async function uploadFile(file: File) {
-    const timestamp = Date.now();
     const filePath = `images/${file.name}`;
     const { data, error } = await supabase.storage
       .from("google-drive-lite")
@@ -81,20 +80,52 @@ export default function GoogleDriveLite(props: Props) {
     return fileName;
   }
 
-  async function handleDelete(fileId: string) {
+  async function handleDelete(fileId: string, fileName: string) {
+    const filePath = `images/${fileName}`;
     const { error } = await supabase.storage
       .from("google-drive-lite")
-      .remove([`images/${fileId}`]);
+      .remove([filePath]);
 
     if (error) {
-      console.error("Delete failed:", error.message);
+      console.log("Delete failed:", error.message);
       alert("Failed to delete file!");
       return;
     }
 
+    console.log("Successfully deleted ", fileName);
     setImageFiles((prevFiles) =>
       prevFiles.filter((file) => file.id !== fileId)
     );
+  }
+
+  async function handleReplace(fileId: string, newFile: File) {
+    const fileToUpdate = imageFiles.find((file) => file.id === fileId);
+    if (!fileToUpdate) {
+      alert("File not found.");
+      return;
+    }
+
+    const filePath = `images/${newFile.name}`;
+
+    try {
+      const { data, error } = await supabase.storage
+        .from("google-drive-lite")
+        .upload(filePath, newFile, {
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (error) {
+        console.log("Error replacing file:", error.message);
+        alert("Failed to replace the file.");
+        return;
+      }
+
+      console.log("File replaced successfully with new name:", data);
+      fetchData();
+    } catch (error) {
+      console.log("Unexpected error:", error);
+    }
   }
 
   return (
@@ -146,6 +177,7 @@ export default function GoogleDriveLite(props: Props) {
         searchQuery={searchQuery}
         files={imageFiles}
         handleDelete={handleDelete}
+        handleReplace={handleReplace}
       />
     </div>
   );
