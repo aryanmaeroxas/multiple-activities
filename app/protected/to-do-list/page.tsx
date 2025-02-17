@@ -8,6 +8,7 @@ export default function TodoApp() {
   const [newTodo, setNewTodo] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [priority, setPriority] = useState("low");
   const [user, setUser] = useState<any>(null);
 
   const supabase = createClient();
@@ -31,12 +32,19 @@ export default function TodoApp() {
     if (data) setTodos(data);
   }
 
-  async function addTodo() {
+  async function addTodo(priority: string) {
     if (!newTodo.trim() || !user) return;
 
     const { data, error } = await supabase
       .from("todos")
-      .insert([{ task: newTodo, completed: false, user_id: user.id }])
+      .insert([
+        {
+          task: newTodo,
+          priority: priority,
+          completed: false,
+          user_id: user.id,
+        },
+      ])
       .select();
 
     if (error) {
@@ -114,8 +122,22 @@ export default function TodoApp() {
         onChange={(e) => setNewTodo(e.target.value)}
         placeholder="New Task"
         className="w-full p-2 border rounded focus:outline-none"
-        onKeyDown={(e) => e.key === "Enter" && addTodo()}
+        onKeyDown={(e) => e.key === "Enter" && addTodo(priority)}
       />
+
+      <select
+        className="select select-bordered w-full max-w-xs"
+        onChange={(e) => {
+          setPriority(e.target.value);
+          console.log(e.target.value);
+        }}
+      >
+        <option value="low" defaultValue="low">
+          Low
+        </option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+      </select>
 
       {/* Task List */}
       <ul className="mt-4 space-y-2">
@@ -161,6 +183,8 @@ export default function TodoApp() {
                 </span>
               )}
             </div>
+
+            <div>{todo.priority}</div>
 
             {/* Delete Button */}
             <button
